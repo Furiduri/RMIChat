@@ -42,7 +42,7 @@ public class ChatView extends javax.swing.JFrame {
         initComponents();
         pnlMain.setVisible(false);        
     }
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -75,6 +75,7 @@ public class ChatView extends javax.swing.JFrame {
         pnlListUsers = new javax.swing.JPanel();
         jScrollPane6 = new javax.swing.JScrollPane();
         LiUsers = new javax.swing.JList<>();
+        btnReload = new javax.swing.JButton();
         pnlPrivado = new javax.swing.JPanel();
         jLabel4 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -300,17 +301,31 @@ public class ChatView extends javax.swing.JFrame {
             .addComponent(jScrollPane6)
         );
 
+        btnReload.setBackground(new java.awt.Color(204, 255, 255));
+        btnReload.setFont(new java.awt.Font("Tahoma", 1, 8)); // NOI18N
+        btnReload.setText("Recargar");
+        btnReload.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                btnReloadMouseClicked(evt);
+            }
+        });
+
         javax.swing.GroupLayout pnlusersLayout = new javax.swing.GroupLayout(pnlusers);
         pnlusers.setLayout(pnlusersLayout);
         pnlusersLayout.setHorizontalGroup(
             pnlusersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, 185, Short.MAX_VALUE)
             .addComponent(pnlListUsers, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(pnlusersLayout.createSequentialGroup()
+                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnReload))
         );
         pnlusersLayout.setVerticalGroup(
             pnlusersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlusersLayout.createSequentialGroup()
-                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(pnlusersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnReload))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(pnlListUsers, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -352,7 +367,7 @@ public class ChatView extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(pnlPrivadoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(pnlPrivadoLayout.createSequentialGroup()
-                                .addGap(0, 14, Short.MAX_VALUE)
+                                .addGap(0, 0, Short.MAX_VALUE)
                                 .addComponent(btnSendPrivate))
                             .addComponent(txtUserSelec, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap())
@@ -379,9 +394,10 @@ public class ChatView extends javax.swing.JFrame {
         jLabel5.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         jLabel5.setText("Mensages Grupales");
 
+        txtMsgGrupo.setBackground(new java.awt.Color(51, 51, 51));
         txtMsgGrupo.setColumns(20);
+        txtMsgGrupo.setForeground(new java.awt.Color(255, 255, 255));
         txtMsgGrupo.setRows(5);
-        txtMsgGrupo.setEnabled(false);
         jScrollPane4.setViewportView(txtMsgGrupo);
 
         txtMsg.setColumns(20);
@@ -391,6 +407,11 @@ public class ChatView extends javax.swing.JFrame {
         btnSend.setBackground(new java.awt.Color(0, 102, 204));
         btnSend.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         btnSend.setText("Enviar");
+        btnSend.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                btnSendMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout pnlMsgGrupalLayout = new javax.swing.GroupLayout(pnlMsgGrupal);
         pnlMsgGrupal.setLayout(pnlMsgGrupalLayout);
@@ -499,9 +520,35 @@ public class ChatView extends javax.swing.JFrame {
        int index = LiUsers.getSelectedIndex();
     }//GEN-LAST:event_LiUsersValueChanged
 
+    private void btnSendMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnSendMouseClicked
+        if(txtMsg.getText().isEmpty())
+            return;
+        try {
+            // TODO add your handling code here:
+            if( SERVER.Send(txtMsg.getText())){                
+                txtMsgGrupo.append("\nMe: "+txtMsg.getText());
+                txtMsg.setText("");                
+            }else{
+                JOptionPane.showMessageDialog(null, "No fue posible enviar el mensaje");
+            }
+        } catch (RemoteException ex) {
+            txtLog.append("\n"+ex.getMessage());
+        }
+    }//GEN-LAST:event_btnSendMouseClicked
+
+    private void btnReloadMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnReloadMouseClicked
+        try {
+            
+            LoadListUsers("");
+        } catch (RemoteException ex) {            
+            txtLog.append("\n"+ex.getMessage());
+        }
+    }//GEN-LAST:event_btnReloadMouseClicked
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JList<String> LiUsers;
+    private javax.swing.JButton btnReload;
     private javax.swing.JButton btnSend;
     private javax.swing.JButton btnSendPrivate;
     private javax.swing.JButton btnStart;
@@ -550,7 +597,8 @@ public class ChatView extends javax.swing.JFrame {
         Registry registry = LocateRegistry.getRegistry(IP, PORT);
         SERVER = (IChatServer) registry.lookup(txtServerName.getText());  
         //Cargar lista de ususarios
-        LoadListUsers();
+        String res = SERVER.Connect(txtUserName.getText(), ClientPORT);
+        LoadListUsers(res);
         clServer = new ServerClient(
                 ClientPORT,
                 txtUserName.getText());
@@ -564,8 +612,9 @@ public class ChatView extends javax.swing.JFrame {
         btnStart.setEnabled(b);
     }
 
-    private void LoadListUsers() throws RemoteException {
-        String res = SERVER.Connect(txtUserName.getText(), ClientPORT);
+    private void LoadListUsers(String res) throws RemoteException {
+        if(res.isEmpty())
+            res = SERVER.GetListConnect();
         ListUsers = utils.Json.toArray(res);        
         ArrayList<String> model = new ArrayList<>();
         for (Client cl : ListUsers) {            

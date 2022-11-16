@@ -14,4 +14,5 @@ import java.rmi.RemoteException;
  */
 public interface IChatClient extends Remote{
     boolean Recive(String msg) throws RemoteException;    
+    boolean Test()throws RemoteException;
 }

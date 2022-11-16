@@ -18,4 +18,5 @@ public interface IChatServer extends Remote{
     String Connect(String UserName, int Port) throws RemoteException;
     boolean Disconect()throws RemoteException;
     boolean Send(String msg) throws RemoteException;
+    String GetListConnect() throws RemoteException;
 }

@@ -46,5 +46,10 @@ public class ServerClient implements IChatClient{
         }
         return true;
     }
+
+    @Override
+    public boolean Test() throws RemoteException {
+        return true;
+    }
     
 }
