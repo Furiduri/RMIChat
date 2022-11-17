@@ -10,6 +10,7 @@ import interfaces.Client;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -60,11 +61,19 @@ public class ChatServer implements IChatServer {
             if (!clList.isPresent()) {
                 cliets.add(cl);
                 System.out.println("New User Login: " + cl.UserName);
+                SendSystemMSG("New User Login: " + cl.UserName, cl.UserName);
             } else {
-                cliets.get(cliets.indexOf(clList.get())).UserName = cl.UserName;
-                System.out.println("User Reconected: " + cl.UserName);
+                Client actualCL = cliets.get(cliets.indexOf(clList.get()));
+                try {
+                    actualCL.TestConect();
+                    return "";
+                } catch (Exception e) {
+                    actualCL.IP = cl.IP;
+                    actualCL.PORT = cl.PORT;
+                    System.out.println("Update: " + cl.UserName);
+                    SendSystemMSG("User Reconected: " + cl.UserName, cl.UserName);
+                }
             }
-
         } catch (ServerNotActiveException ex) {
             Logger.getLogger(ChatServer.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -79,8 +88,10 @@ public class ChatServer implements IChatServer {
             String ip = RemoteServer.getClientHost();
             Optional<Client> clList = cliets.stream().filter(e -> e.IP.equals(ip)).findFirst();
             if (clList.isPresent()) {
-                System.out.println("LogOut User: " + clList.get().UserName);
+                String eMsg = "LogOut User: " + clList.get().UserName;
+                System.out.println(eMsg);
                 cliets.remove(clList.get());
+                SendSystemMSG(eMsg,"");
             }
             return true;
         } catch (ServerNotActiveException ex) {
@@ -90,37 +101,66 @@ public class ChatServer implements IChatServer {
     }
 
     @Override
-    public boolean Send(String msg) throws RemoteException {
+    public String Send(String user, String msg) throws RemoteException {
         try {
-            String ip = RemoteServer.getClientHost();
-            Optional<Client> clList = cliets.stream().filter(e -> e.IP.equals(ip)).findFirst();
+            Optional<Client> clList = cliets.stream().filter(e -> e.UserName.equals(user)).findFirst();
             Client cl = clList.get();
             for (Client item : cliets) {
                 if (item.UserName != cl.UserName) {
                     System.out.println("User:" + cl.UserName + " Msg: " + msg);
-                    boolean res = item.SendMsg(cl.UserName + ": " + msg);
+                    try {
+                        boolean res = item.SendMsg(cl.UserName, msg);
+                    } catch (Exception e) {
+                        String eMsg = "LogOut User: " + item.UserName;
+                        System.out.println(eMsg);
+                        cliets.remove(item);
+                        SendSystemMSG(eMsg, "");
+                    }
                 }
             }
-            return true;
+            String res = Json.toJSON(cliets);
+            return res;
         } catch (Exception ex) {
             Logger.getLogger(ChatServer.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
+            return "";
         }
     }
 
     @Override
     public String GetListConnect() throws RemoteException {
-        try {
-            for (Client item : cliets) {
+        for (Client item : cliets) {
+            try {
                 if (!item.TestConect()) {
                     cliets.remove(item);
                 }
+            } catch (Exception ex) {
+                String eMsg = "LogOut User: " + item.UserName;
+                System.out.println(eMsg);
+                cliets.remove(item);
+                SendSystemMSG(eMsg, "");
             }
-        } catch (NotBoundException ex) {
-            Logger.getLogger(ChatServer.class.getName()).log(Level.SEVERE, null, ex);
         }
         String res = Json.toJSON(cliets);
         return res;
     }
 
+    private void SendSystemMSG(String msg, String excluye) {
+        for (Client item : cliets) {
+            
+            try {
+                if(item.UserName != excluye)
+                    item.SendMsg("System", msg);
+            } catch (Exception e) {
+                String eMsg = "LogOut User: " + item.UserName;
+                System.out.println(eMsg);
+                cliets.remove(item);
+                SendSystemMSG(eMsg, excluye);
+            }
+        }
+    }
+
+    @Override
+    public boolean Test() throws RemoteException {
+        return true;
+    }
 }

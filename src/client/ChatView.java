@@ -14,6 +14,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractListModel;
@@ -29,10 +30,10 @@ import javax.swing.event.ListDataListener;
 public class ChatView extends javax.swing.JFrame {
     private static String IP;    
     private static int PORT;
-    public ArrayList<Client> listUsers;
+    public static ArrayList<Client> listUsers;
     private ServerClient clServer;
     private IChatServer SERVER;
-    private ArrayList<Client> ListUsers;
+    private ArrayList<Client> UsersList;
     private Integer ClientPORT;
     
     /**
@@ -40,7 +41,7 @@ public class ChatView extends javax.swing.JFrame {
      */
     public ChatView() {
         initComponents();
-        pnlMain.setVisible(false);        
+        pnlMain.setVisible(false);           
     }
     
     /**
@@ -140,7 +141,8 @@ public class ChatView extends javax.swing.JFrame {
 
         pnlServer.setBackground(pnlHeader.getBackground());
 
-        lblServer.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        lblServer.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
+        lblServer.setForeground(new java.awt.Color(255, 255, 255));
         lblServer.setText("Informacion del Servidor");
 
         jLabel1.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
@@ -154,7 +156,7 @@ public class ChatView extends javax.swing.JFrame {
         txtServerName.setToolTipText("IP y Puerto");
 
         txtIP_Port1.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
-        txtIP_Port1.setText("172.30.80.1:1234");
+        txtIP_Port1.setText("10.55.76.62:1234");
         txtIP_Port1.setToolTipText("IP y Puerto");
 
         javax.swing.GroupLayout pnlServerLayout = new javax.swing.GroupLayout(pnlServer);
@@ -197,7 +199,7 @@ public class ChatView extends javax.swing.JFrame {
         btnStart.setBackground(new java.awt.Color(0, 204, 255));
         btnStart.setFont(new java.awt.Font("Tahoma", 1, 24)); // NOI18N
         btnStart.setForeground(new java.awt.Color(255, 255, 255));
-        btnStart.setText("Inicar");
+        btnStart.setText("Iniciar");
         btnStart.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 btnStartMouseClicked(evt);
@@ -348,6 +350,11 @@ public class ChatView extends javax.swing.JFrame {
         btnSendPrivate.setBackground(new java.awt.Color(0, 153, 255));
         btnSendPrivate.setFont(new java.awt.Font("Tahoma", 1, 14)); // NOI18N
         btnSendPrivate.setText("Enviar");
+        btnSendPrivate.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                btnSendPrivateMouseClicked(evt);
+            }
+        });
 
         txtUserSelec.setFont(new java.awt.Font("Tahoma", 2, 12)); // NOI18N
         txtUserSelec.setText("Ninguno");
@@ -492,6 +499,9 @@ public class ChatView extends javax.swing.JFrame {
 
     private void btnStartMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnStartMouseClicked
         // TODO add your handling code here:
+        if(!btnStart.isEnabled())
+            return;
+        SetEnableHeader(false);
         if(txtUserName.getText().isEmpty())
             JOptionPane.showMessageDialog(this, "Favor de elegir un nombre de usuario");
         if(txtPortClient.getText().isEmpty())
@@ -504,9 +514,13 @@ public class ChatView extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Favor Poner el nombre del servidor");
         
         try {
-            StartChat();  
-            pnlMain.setVisible(true);
-            SetEnableHeader(false);
+            if(StartChat()){
+                pnlMain.setVisible(true);
+                SetEnableHeader(false);                
+            }else{
+                pnlMain.setVisible(false);
+                SetEnableHeader(true);
+            }
         } catch (Exception e) {
             txtLog.append("\n"+e.getMessage());            
             pnlMain.setVisible(false);
@@ -525,14 +539,26 @@ public class ChatView extends javax.swing.JFrame {
             return;
         try {
             // TODO add your handling code here:
-            if( SERVER.Send(txtMsg.getText())){                
+            String res = SERVER.Send(txtUserName.getText(), txtMsg.getText());
+            if(!res.isEmpty()){                
                 txtMsgGrupo.append("\nMe: "+txtMsg.getText());
-                txtMsg.setText("");                
+                txtMsg.setText("");    
+                LoadListUsers(res);
             }else{
                 JOptionPane.showMessageDialog(null, "No fue posible enviar el mensaje");
             }
         } catch (RemoteException ex) {
             txtLog.append("\n"+ex.getMessage());
+            try {
+                SERVER.Test();
+            } catch (Exception e) {
+                try {
+                    StartChat();
+                    JOptionPane.showMessageDialog(null, "Servidor reconectado!, intente volver a enviar el mensaje");
+                } catch (Exception ex1) {
+                    JOptionPane.showMessageDialog(null, "No fue posible reconctar con el servidor, favor de reinicar la aplicacion");
+                } 
+            }
         }
     }//GEN-LAST:event_btnSendMouseClicked
 
@@ -544,6 +570,38 @@ public class ChatView extends javax.swing.JFrame {
             txtLog.append("\n"+ex.getMessage());
         }
     }//GEN-LAST:event_btnReloadMouseClicked
+
+    private void btnSendPrivateMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnSendPrivateMouseClicked
+        // TODO add your handling code here:
+        try {
+            if(txtPrivate.getText().isEmpty()){
+                   JOptionPane.showMessageDialog(null, "no se pueden enviar mensajes vacios");
+            }else{
+                if(LiUsers.getSelectedIndex() > -1){
+                    Optional<Client> clList = UsersList.stream().filter(e -> e.UserName.equals(LiUsers.getSelectedValue())).findFirst();
+                    if(clList.isPresent()){
+                        Client cl = clList.get();
+                        cl.SendMsgPrivade(txtUserName.getText(), txtPrivate.getText());
+                        txtMsgPrivados.append("\nMe: "+txtPrivate.getText());
+                        txtPrivate.setText("");                        
+                    }else{
+                        JOptionPane.showMessageDialog(null, "ususario No encontrado");
+                        LoadListUsers("");
+                    }
+                }else{
+                    JOptionPane.showMessageDialog(null, "Favor de selecionar algun usuario en la lista");
+                }            
+            }            
+        } catch (Exception ex) {
+            txtLog.append("\n"+ex.getMessage());
+            JOptionPane.showMessageDialog(null, "No fue posible enviar el mensaje");
+            try {
+                LoadListUsers("");
+            } catch (RemoteException ex1) {
+                Logger.getLogger(ChatView.class.getName()).log(Level.SEVERE, null, ex1);
+            }
+        }
+    }//GEN-LAST:event_btnSendPrivateMouseClicked
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -588,7 +646,7 @@ public class ChatView extends javax.swing.JFrame {
     private javax.swing.JLabel txtUserSelec;
     // End of variables declaration//GEN-END:variables
 
-    private void StartChat() throws RemoteException, NotBoundException, UnknownHostException, AlreadyBoundException {
+    private boolean StartChat() throws RemoteException, NotBoundException, UnknownHostException, AlreadyBoundException {
         ChatClient chat = new ChatClient();
         String[] args = txtIP_Port1.getText().split(":");
         IP = args[0];
@@ -598,10 +656,19 @@ public class ChatView extends javax.swing.JFrame {
         SERVER = (IChatServer) registry.lookup(txtServerName.getText());  
         //Cargar lista de ususarios
         String res = SERVER.Connect(txtUserName.getText(), ClientPORT);
-        LoadListUsers(res);
-        clServer = new ServerClient(
-                ClientPORT,
-                txtUserName.getText());
+        if(res.isEmpty()){
+            JOptionPane.showMessageDialog(null, "Este nombre de ususario no se encuentra disponible");
+            return false;
+        }else{
+            LoadListUsers(res);
+            clServer = new ServerClient(
+                    ClientPORT,
+                    txtUserName.getText(),
+                    txtMsgGrupo,
+                    txtMsgPrivados
+            );            
+        }
+        return true;
     }
 
     private void SetEnableHeader(boolean b) {
@@ -615,10 +682,11 @@ public class ChatView extends javax.swing.JFrame {
     private void LoadListUsers(String res) throws RemoteException {
         if(res.isEmpty())
             res = SERVER.GetListConnect();
-        ListUsers = utils.Json.toArray(res);        
+        UsersList = (ArrayList<Client>) utils.Json.toArray(res).clone();        
         ArrayList<String> model = new ArrayList<>();
-        for (Client cl : ListUsers) {            
-            model.add(cl.UserName + " ["+cl.IP+"]");
+        for (Client cl : UsersList) {    
+            if(!cl.UserName.equals( txtUserName.getText()))
+                model.add(cl.UserName);
         }
         LiUsers.setListData(model.toArray(new String[0]));
     }

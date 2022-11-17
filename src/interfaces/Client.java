@@ -18,7 +18,6 @@ public class Client {
     public  String UserName;
     public String IP;
     public int PORT;
-    private IChatClient clientS;
 
     public Client(String UserName, String IP, int PORT){
         this.UserName = UserName;
@@ -26,20 +25,24 @@ public class Client {
         this.PORT = PORT;
     } 
 
-    public boolean SendMsg(String msg) throws RemoteException, NotBoundException {                
-        StartClient();
-        return clientS.Recive(msg);
+    public boolean SendMsg(String user,String msg) throws RemoteException, NotBoundException {                
+        IChatClient clientS = StartClient();
+        return clientS.Recive(user,msg);
     }
-
-    private void StartClient() throws RemoteException, NotBoundException {
-        if(clientS == null){
+    
+    
+    public boolean SendMsgPrivade(String user,String msg) throws RemoteException, NotBoundException {                
+        IChatClient clientS = StartClient();
+        return clientS.RecivePrivate(user,msg);
+    }
+    
+    private IChatClient StartClient() throws RemoteException, NotBoundException {        
             Registry registry = LocateRegistry.getRegistry(this.IP, this.PORT);
-            clientS = (IChatClient) registry.lookup(this.UserName);                    
-        }
+            return  (IChatClient) registry.lookup(this.UserName); 
     }
     
     public boolean TestConect() throws RemoteException, NotBoundException{        
-        StartClient();
+       IChatClient clientS = StartClient();
         return clientS.Test();
     }
 }
